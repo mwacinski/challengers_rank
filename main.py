@@ -200,7 +200,7 @@ class DataTransformator:
 if __name__ == '__main__':
     URL = "https://euw1.api.riotgames.com/lol/league/v4/" \
           "challengerleagues/by-queue/RANKED_SOLO_5x5?api_key="
-    API_KEY = "RGAPI-64517756-b170-4493-b380-1358ebab4b63"
+    API_KEY = ""
     FILE_PATH = "data.csv"
     DIM_FILE_PATH = "dim_data.csv"
     data_extractor = APIDataExtractor(URL, API_KEY)
