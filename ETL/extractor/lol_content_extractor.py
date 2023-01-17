@@ -10,9 +10,10 @@ from requests.exceptions import (
 class LOLContentExtractor:
     """Extracting players data from API league"""
 
-    def __init__(self, url: str, api_key: str):
+    def __init__(self, url: str, api_key: str, path: str):
         self.url = url
         self.api_key = api_key
+        self.path = path
 
     def make_api_request(self) -> Union[Dict, requests.exceptions.HTTPError]:
         """Getting information from API request and if API key is wrong or expired
@@ -32,4 +33,4 @@ class LOLContentExtractor:
         """Call make_api_request() and return the resulting data as a DataFrame"""
         data = self.make_api_request()
         df = pd.DataFrame(data['entries'])
-        return df.to_csv("data.csv")
+        return df.to_csv(f"{self.path}\\data.csv")

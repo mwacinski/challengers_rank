@@ -6,13 +6,12 @@ import numpy as np
 class LOLContentTransformer:
     """Changing structure and types of data, preparing for SCD2"""
 
-    def __init__(self, file_path: str):
-        self.file_path = file_path
-        self.dim_file_path = f"dim_{file_path}"
+    def __init__(self, path: str):
+        self.path = path
 
     def columns_change(self) -> pd.DataFrame:
         """Creating new dataframe with appropriate data (Selecting few columns from old)"""
-        df = pd.read_csv(self.file_path)
+        df = pd.read_csv(f"{self.path}\\data.csv")
         new_df = df[['summonerId', 'summonerName', 'leaguePoints', 'wins', 'losses']].copy()
 
         # Fix Datatypes
@@ -23,8 +22,7 @@ class LOLContentTransformer:
         new_df['losses'] = new_df['losses'].astype(pd.Int64Dtype())
 
         # Creating win/loss ratio, rounded to 2 decimal places
-        new_df = new_df.assign(win_loss_ratio=
-                               round(new_df['wins'] / (new_df['wins'] + new_df['losses']) * 100, 2))
+        new_df = new_df.assign(win_loss_ratio=round(new_df['wins'] / (new_df['wins'] + new_df['losses']) * 100, 2))
         new_df['win_loss_ratio'] = new_df['win_loss_ratio'].astype(pd.Float64Dtype())
 
         # Assigning new names
@@ -37,8 +35,8 @@ class LOLContentTransformer:
         })
         return new_df
 
-    def create_dim_model(self) -> None:
-        """Creating new columns(“DimKey”,”ValidFrom”,”ValidTo” and “IsCurrent”) and new .csv file"""
+    def create_dim_model(self) -> pd.DataFrame:
+        """Creating new columns(DimKey, ValidFrom, ValidTo and IsCurrent) and new .csv file"""
         dim_df = self.columns_change()
         dim_df = dim_df.rename(columns={
             'summonerName_x': 'summonerName_y',
@@ -48,26 +46,30 @@ class LOLContentTransformer:
             'win_loss_ratio_x': 'win_loss_ratio_y'
         })
         dim_df = dim_df.assign(DimKey=dim_df.index)
-        dim_df = dim_df.assign(ValidFrom=datetime.now().strftime("%d%m%Y"))
-        dim_df = dim_df.assign(ValidTo='31129999')
+        dim_df = dim_df.assign(ValidFrom=datetime.now().strftime("%Y-%m-%d"))
+        dim_df = dim_df.assign(ValidTo='2024-01-30')
         dim_df = dim_df.assign(IsCurrent='1')
-        return dim_df
 
-    def implemeting_scd2(self) -> None:
-        """Implemeting slowly changing dimensions type 2"""
+        dim_df = dim_df[['DimKey', 'summonerId', 'leaguePoints_y', 'wins_y', 'losses_y', 'win_loss_ratio_y',
+                         'summonerName_y', 'ValidFrom', 'ValidTo', 'IsCurrent']]
+        return dim_df.to_csv(f"{self.path}\\dim_data.csv", index=False)
+
+    def implementing_scd2(self) -> None:
+        """Implementing slowly changing dimensions type 2
+         https://blogs.sap.com/2021/10/06/sap-data-warehouse-cloud-how-to-create-a-slowly-changing-dimension/"""
         df = self.columns_change()
-        dim_df = self.create_dim_model()
+        dim_df = pd.read_csv(f"{self.path}\\dim_data.csv")
 
         # Get Max DimKey
         max_dim_key = dim_df['DimKey'].max()
 
-        # Left Join dataframes on keyfields
+        # Left Join dataframes on key fields
         df_merge_col = pd.merge(df, dim_df, on='summonerId', how='left')
 
         # Fix Datatypes
         df_merge_col['DimKey'] = df_merge_col['DimKey'].astype(pd.Int64Dtype())
-        df_merge_col['ValidFrom'] = df_merge_col['ValidFrom'].astype(pd.Int64Dtype())
-        df_merge_col['ValidTo'] = df_merge_col['ValidTo'].astype(pd.Int64Dtype())
+        df_merge_col['ValidFrom'] = pd.to_datetime(df_merge_col['ValidFrom'], format='%Y-%m-%d')
+        df_merge_col['ValidTo'] = pd.to_datetime(df_merge_col['ValidTo'], format='%Y-%m-%d')
         df_merge_col['IsCurrent'] = df_merge_col['IsCurrent'].astype(pd.Int16Dtype())
 
         # Identify new records By checking if DimKey IsNull
@@ -108,7 +110,7 @@ class LOLContentTransformer:
             "summonerName_x": "summonerName"
         })
 
-        # Select required No Change Fields fields
+        # Select required No Change Fields
         df_no_change_final = df_no_change_rename[[
             'DimKey', 'summonerId', 'leaguePoints', 'wins', 'losses', 'win_loss_ratio',
             'summonerName', 'ValidFrom', 'ValidTo', 'IsCurrent'
@@ -133,8 +135,7 @@ class LOLContentTransformer:
         })
 
         # Update SCD2 New ValidFrom
-        df_scd2_records["ValidFrom"] = datetime.now().strftime("%d%m%Y")
-        df_scd2_records["IsCurrrent"] = '1'
+        df_scd2_records["IsCurrent"] = '1'
 
         # Select required SCD2 New Fields
         df_scd2new_final = df_scd2_new_rename[[
@@ -149,7 +150,7 @@ class LOLContentTransformer:
         })
 
         # Update SCD2 Old ValidTo and IsCurrent
-        df_scd2_old_rename["ValidTo"] = datetime.now().strftime("%d%m%Y")
+        df_scd2_old_rename["ValidTo"] = datetime.now().strftime("%Y-%m-%d")
         df_scd2_old_rename["IsCurrent"] = 0
 
         # Select required SCD2 Old Fields
@@ -164,8 +165,8 @@ class LOLContentTransformer:
         })
 
         # Update New records ValidFrom
-        df_new_rename["ValidFrom"] = datetime.now().strftime("%d%m%Y")
-        df_new_rename["ValidTo"] = 31129999
+        df_new_rename["ValidFrom"] = datetime.now().strftime("%Y-%m-%d")
+        df_new_rename["ValidTo"] = '2024-01-30'
         df_new_rename["IsCurrent"] = 1
 
         # Select required New record Fields
@@ -179,7 +180,7 @@ class LOLContentTransformer:
         df_new_new_scd2_concat['DimKey'] = np.arange(len(df_new_new_scd2_concat)) + 1 + max_dim_key
 
         # Union All Dataframes
-        df_allframes = [df_scd2_old_final, df_scd1_final, df_no_change_final, df_new_new_scd2_concat]
-        df_allframes_concat = pd.concat(df_allframes)
+        df_all_frames = [df_scd2_old_final, df_scd1_final, df_no_change_final, df_new_new_scd2_concat]
+        df_all_frames_concat = pd.concat(df_all_frames)
 
-        return df_allframes_concat.to_csv('final_data.csv', index=False)
+        return df_all_frames_concat.to_csv(f"{self.path}\\final_data.csv", index=False)
