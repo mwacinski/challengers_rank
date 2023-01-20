@@ -5,14 +5,15 @@ from requests.exceptions import (
     ConnectionError,
     HTTPError
 )
+from config import Config as Cfg
 
 
 class LOLContentExtractor:
     """Extracting players data from API league"""
 
-    def __init__(self, url: str, api_key: str, path: str):
-        self.url = url
-        self.api_key = api_key
+    def __init__(self, path: str):
+        self.url = Cfg.URL
+        self.api_key = Cfg.API_KEY
         self.path = path
 
     def make_api_request(self) -> Union[Dict, requests.exceptions.HTTPError]:

@@ -27,9 +27,9 @@ class Job:
 
 
 def run_etl_job():
-    extractor = LOLContentExtractor(Cfg.DATA_DIR)
+    extractor = LOLContentExtractor(Cfg.URL)
     transformer = LOLContentTransformer(Cfg.DATA_DIR)
-    loader = LOLContentLoader(Cfg.DATA_DIR)
+    loader = LOLContentLoader(f"{Cfg.LOADER_UTILS_DIR}/create_table.sql")
 
     etl = Job(extractor,
               transformer,

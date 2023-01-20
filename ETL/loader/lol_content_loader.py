@@ -1,23 +1,21 @@
 from ETL.loader.utils.db_conn import DbConnection
-from ETL.config import DBCreds as DBC
+from config import DBCreds as DB
 
 
 class LOLContentLoader:
 
-    def __init__(self, content: str, path: str):
-        self.content = content
+    def __init__(self, path: str):
         self.path = path
         self.table_name = "challengers_rank"
+        self.dbname = DB.POSTGRES_DATABASE
+        self.user = DB.POSTGRES_USER
+        self.password = DB.POSTGRES_PASSWORD
+        self.host = DB.POSTGRES_HOST
 
     def load_content(self) -> None:
-        db = DbConnection(DBC.DBNAME, DBC.USER, DBC.PWD)
+        db = DbConnection(self.dbname, self.user, self.password, self.host)
         try:
-            db.copy_from_sql(self.content)
-            db.commit()
-        except Exception as err:
-            print("Error while creating table in Postgres", err)
-        try:
-            db.copy_from_csv(self.path, self.table_name)
+            db.copy_from_csv(f"{self.path}\\final_data.csv", self.table_name)
             db.commit()
         except Exception as err:
             print("Error while loading to Postgres", err)

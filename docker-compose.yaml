@@ -1,17 +1,26 @@
 version: '3.5'
 
 services:
+
   postgres:
-    container_name: postgres_demo
-    image: postgres:latest
+    container_name: postgres_service
+    image: postgres@sha256:e7664b9a147a7d34fb358111df704b086ea5420890315084370ab607932c61db
     environment:
-      POSTGRES_USER: super_admin
-      POSTGRES_PASSWORD: SomeSecretPassword
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
       PGDATA: /data/postgres
+
     volumes:
        - postgres-db:/data/postgres
+       - ./init.sh:/docker-entrypoint-initdb.d/init.sh
     ports:
       - "5432:5432"
+
+  etl:
+    image: etl
+    build:
+      context: .
+      dockerfile: Dockerfile
 
 
 volumes:

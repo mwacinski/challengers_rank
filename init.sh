@@ -1,4 +1,8 @@
-CREATE TABLE IF NOT EXISTS challengers_rank (
+#!/bin/sh
+
+psql --dbname=postgres --username=admin <<EOF
+DROP TABLE IF EXISTS challengers_rank;
+CREATE TABLE challengers_rank (
     DimKey int,
     summonerId varchar(255),
     leaguePoints int,
@@ -10,3 +14,4 @@ CREATE TABLE IF NOT EXISTS challengers_rank (
     ValidTo date,
     isCurrent int
 );
+EOF
