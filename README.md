@@ -1,8 +1,8 @@
 # Challengers rank
 
 Example ETL jobs that retrieves data about challenger players from Riot Developer API. Only relevant data was extracted 
-(summonerId, leaguePoints, wins, losses and summonerName). To provide historical data for analyze purposes i used SCD(Slowly Changing Dimension). 
-New columns have been added (dim_key, valid_from, valid_to, iscurrent) according to scd rules. Data is saved in Postgres database.
+(summonerId, leaguePoints, wins, losses and summonerName). To provide historical data for analyze purposes i used SCD (Slowly Changing Dimension). 
+New columns have been added (dim_key, valid_from, valid_to, iscurrent) according to scd rules. Data is saved in Postgres database. API unfortunately requries 24h regeneration.
 
 !["ETL"](./images/help.png)
 
