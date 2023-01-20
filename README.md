@@ -17,7 +17,7 @@ Build docker image
 ./build.sh
 ```
 
-2. Run docker image
+Run docker image
 ```sh
 ./run.sh
 ```
